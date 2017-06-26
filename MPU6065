@@ -1,0 +1,79 @@
+/*---------------------------------------------------
+MPU6065     Arudino nano
+GND      -> GND
+SCL      -> SCL (A5)
+SDA      -> SDA (A4)
+VCC      -> 5V
+-----------------------------------------------------*/
+#include "I2Cdev.h"
+#include "MPU6050.h"
+#include "Wire.h"
+
+long LastTime, NowTime, TimeSpan;
+float Ax,Ay,Az;
+float X,Y,Z;                                          // angle from acclerometer
+float Gyro_x, Gyro_y,Gyro_z;                 // angle accleration from gyro sensor
+float ix,iy,iz;
+float Roll,Pitch,Yaw;
+
+
+MPU6050 accelgyro;
+int16_t ax, ay, az;
+int16_t gx, gy, gz;
+
+
+void setup() 
+{
+Wire.begin();
+Serial.begin(9600);
+accelgyro.initialize();
+
+
+}
+
+void loop() 
+{
+
+  angle();
+
+}
+
+void angle(){
+  accelgyro.getMotion6(&ax, &ay, &az, &gx, &gy, &gz);
+
+  Ax = ax/16384.00;
+  Ay = ay/16384.00;
+  Az = az/16384.00;
+  X = atan(Ax/sqrt(Az*Az+Ay*Ay))*180/PI;             //angle from accelermeter
+  Y = atan(Ay/sqrt(Az*Az+Ax*Ax))*180/PI;
+  Z = atan(Az/sqrt(Ax*Ax+Ay*Ay))*180/PI;
+
+  Gyro_x = gx/131.00;       // get angle acceleration
+  Gyro_y = gy/131.00;
+  Gyro_z = gz/131.00;
+  
+  /*Serial.print("Gyro_x = ");
+  Serial.print(Gyro_x);
+  Serial.print("Gyro_y = ");
+  Serial.print(Gyro_y);*/
+  /*Serial.print("Gyro_z = ");
+  Serial.println(Gyro_z);
+  if(Gyro_z >= 90)
+  {
+    Serial.print("OK");
+    delay(1000);
+  }*/
+  NowTime = millis(); //star to count time
+  TimeSpan = NowTime - LastTime; //count time pass
+  ix = 0.95*(ix + Gyro_x*TimeSpan / 1000) + 0.05*Y;            // position count by Complementary Filter
+  iy = 0.94*(iy + Gyro_y*TimeSpan / 1000) + 0.06*X;
+  LastTime = NowTime;
+
+  Roll = ix;
+  Pitch = iy;
+Serial.print("Roll : ");
+Serial.print(ix);
+Serial.print("Pitch : ");
+Serial.println(iy);
+
+}
